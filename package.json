@@ -1,6 +1,6 @@
 {
-  "name": "odoo-xmlrpc-ts",
-  "version": "1.2.0",
+  "name": "@iceship/odoo-xmlrpc-ts",
+  "version": "1.2.1",
   "description": "Type-safe Odoo XML-RPC client for Node.js written in TypeScript",
   "type": "module",
   "main": "./dist/cjs/index.js",
@@ -58,7 +58,7 @@
     "erp",
     "api-client"
   ],
-  "author": "Your Name",
+  "author": "Iraycd",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -95,5 +95,8 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "publishConfig": {
+    "registry": "http://localhost:4873"
   }
 }

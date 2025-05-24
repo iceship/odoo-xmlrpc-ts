@@ -1,36 +1,20 @@
 // src/client.ts
 import xmlrpc from 'xmlrpc';
-
-import {
-  OdooConfig,
-  OdooVersion,
-  OdooFieldsMap,
-  SearchOptions,
-  SearchReadOptions,
-  OdooDomain,
-} from './types.js';
 import { OdooError, OdooAuthenticationError } from './errors.js';
-
 export class OdooClient {
-  private common: xmlrpc.Client;
-  private object: xmlrpc.Client;
-  private uid: number | null = null;
-  private config: OdooConfig;
-
-  constructor(config: OdooConfig) {
+  constructor(config) {
+    this.uid = null;
     this.config = config;
-
     const protocol = config.url.startsWith('https') ? 'https' : 'http';
-
     const createClient = protocol === 'https' ? xmlrpc.createSecureClient : xmlrpc.createClient;
-
     this.common = createClient(`${config.url}/xmlrpc/2/common`);
-    this.object = createClient(`${config?.url}/xmlrpc/2/object`);
+    this.object = createClient(
+      `${config === null || config === void 0 ? void 0 : config.url}/xmlrpc/2/object`,
+    );
   }
-
-  private methodCall<T>(client: xmlrpc.Client, method: string, params: any[]): Promise<T> {
+  methodCall(client, method, params) {
     return new Promise((resolve, reject) => {
-      client.methodCall(method, params, (error: object, value: T) => {
+      client.methodCall(method, params, (error, value) => {
         if (error) {
           reject(new Error(String(error)));
         } else {
@@ -39,8 +23,7 @@ export class OdooClient {
       });
     });
   }
-
-  public async version(): Promise<OdooVersion> {
+  async version() {
     try {
       return await this.methodCall(this.common, 'version', []);
     } catch (error) {
@@ -50,20 +33,17 @@ export class OdooClient {
       throw new OdooError('Failed to get version');
     }
   }
-
-  public async authenticate(): Promise<number> {
+  async authenticate() {
     try {
-      const uid = await this.methodCall<number>(this.common, 'authenticate', [
+      const uid = await this.methodCall(this.common, 'authenticate', [
         this.config.db,
         this.config.username,
         this.config.password,
         {},
       ]);
-
       if (!uid) {
         throw new OdooAuthenticationError();
       }
-
       this.uid = uid;
       return uid;
     } catch (error) {
@@ -73,19 +53,12 @@ export class OdooClient {
       throw new OdooAuthenticationError();
     }
   }
-
-  public async execute<T>(
-    model: string,
-    method: string,
-    args: any[] = [],
-    kwargs: object = {},
-  ): Promise<T> {
+  async execute(model, method, args = [], kwargs = {}) {
     if (!this.uid) {
       await this.authenticate();
     }
-
     try {
-      return await this.methodCall<T>(this.object, 'execute_kw', [
+      return await this.methodCall(this.object, 'execute_kw', [
         this.config.db,
         this.uid,
         this.config.password,
@@ -101,47 +74,28 @@ export class OdooClient {
       throw new OdooError(`Method ${method} failed on ${model}`);
     }
   }
-
-  public async search(
-    model: string,
-    domain: OdooDomain,
-    options: SearchOptions = {},
-  ): Promise<number[]> {
+  async search(model, domain, options = {}) {
     return await this.execute(model, 'search', [domain], options);
   }
-
-  public async searchCount(model: string, domain: OdooDomain): Promise<number> {
+  async searchCount(model, domain) {
     return await this.execute(model, 'search_count', [domain]);
   }
-
-  public async read<T>(model: string, ids: number[], fields: string[] = []): Promise<T[]> {
+  async read(model, ids, fields = []) {
     return await this.execute(model, 'read', [ids], { fields });
   }
-
-  public async searchRead<T>(
-    model: string,
-    domain: OdooDomain,
-    options: SearchReadOptions = {},
-  ): Promise<T[]> {
+  async searchRead(model, domain, options = {}) {
     return await this.execute(model, 'search_read', [domain], options);
   }
-
-  public async create<T extends object>(model: string, values: T): Promise<number> {
+  async create(model, values) {
     return await this.execute(model, 'create', [values]);
   }
-
-  public async write<T extends object>(model: string, ids: number[], values: T): Promise<boolean> {
+  async write(model, ids, values) {
     return await this.execute(model, 'write', [ids, values]);
   }
-
-  public async unlink(model: string, ids: number[]): Promise<boolean> {
+  async unlink(model, ids) {
     return await this.execute(model, 'unlink', [ids]);
   }
-
-  public async fieldsGet(
-    model: string,
-    attributes: string[] = ['string', 'help', 'type'],
-  ): Promise<OdooFieldsMap> {
+  async fieldsGet(model, attributes = ['string', 'help', 'type']) {
     return await this.execute(model, 'fields_get', [], { attributes });
   }
 }
