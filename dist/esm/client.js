@@ -1,5 +1,5 @@
 // src/client.ts
-import * as xmlrpc from 'xmlrpc'; 
+import xmlrpc from 'xmlrpc';
 import { OdooError, OdooAuthenticationError } from './errors.js';
 export class OdooClient {
   constructor(config) {
